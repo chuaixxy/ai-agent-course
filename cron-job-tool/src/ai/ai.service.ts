@@ -62,11 +62,15 @@ export class AiService {
   private readonly modelWithTools: Runnable<BaseMessage[], AIMessage>;
 
   constructor(
-    @Inject('CHAT_MODEL') model: ChatOpenAI
+    @Inject('CHAT_MODEL') model: ChatOpenAI,
     @Inject('QUERY_USER_TOOL') private readonly queryUserTool: any,
+    @Inject('SEND_EMAIL_TOOL') private readonly sendEmailTool: any,
   ) {
     // this.modelWithTools = model.bindTools([queryUserTool]);
-    this.modelWithTools = model.bindTools([this.queryUserTool]);
+    this.modelWithTools = model.bindTools([
+      this.queryUserTool,
+      this.sendEmailTool,
+    ]);
   }
 
   async runChain(query: string) {
@@ -96,6 +100,20 @@ export class AiService {
         if (toolName === 'query_user') {
           const args = queryUserArgsSchema.parse(toolCall.args);
           const result = await this.queryUserTool.invoke(args);
+
+          messages.push(
+            new ToolMessage({
+              tool_call_id: toolCallId,
+              name: toolName,
+              content: result,
+            }),
+          );
+        } else if (toolName === 'send_email') {
+          const result = await this.sendEmailTool.invoke({
+            to: '598658697@qq.com',
+            subject: '测试邮件',
+            text: '这是一封测试邮件',
+          });
 
           messages.push(
             new ToolMessage({
@@ -153,6 +171,16 @@ export class AiService {
         if (toolName === 'query_user') {
           const args = queryUserArgsSchema.parse(toolCall.args);
           const result = await this.queryUserTool.invoke(args);
+
+          messages.push(
+            new ToolMessage({
+              tool_call_id: toolCallId,
+              name: toolName,
+              content: result,
+            }),
+          );
+        } else if (toolName === 'send_email') {
+          const result = await this.sendEmailTool.invoke(toolCall.args);
 
           messages.push(
             new ToolMessage({
